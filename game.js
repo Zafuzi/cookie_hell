@@ -17,9 +17,11 @@ var gold = 0;
 var clicks = 0;
 var upgrade_multiplier_cost = 10;
 var multiplier = 1;
+var multiplier_increase_rate = 0.5;
 var auto_clicks = 0;
 var auto_click_cost = 5;
 var auto_click_rate = 100; // ie 1 time per 100 ticks
+var auto_click_rate_increase_cost = 100;
 
 display( canvas.width, canvas.height );
 
@@ -34,18 +36,18 @@ Buttons.set_active_font( bizcat_grey );
 
 let monsters = [
 	{ name: "Desert Slime", hp: 4, src: "data/monsters/desert/slime.png", img: undefined },
-	{ name: "Desert Slug", hp: 5, src: "data/monsters/desert/slug.png", img: undefined },
-	{ name: "Forest Slime", hp: 4, src: "data/monsters/forest/slime.png", img: undefined },
-	{ name: "Forest Slug", hp: 5, src: "data/monsters/forest/slug.png", img: undefined },
-	{ name: "Mountain Slime", hp: 4, src: "data/monsters/mountain/slime.png", img: undefined },
-	{ name: "Water Slime", hp: 4, src: "data/monsters/water/slime.png", img: undefined }
+	{ name: "Desert Slug", hp: 8, src: "data/monsters/desert/slug.png", img: undefined },
+	{ name: "Forest Slime", hp: 14, src: "data/monsters/forest/slime.png", img: undefined },
+	{ name: "Forest Slug", hp: 25, src: "data/monsters/forest/slug.png", img: undefined },
+	{ name: "Mountain Slime", hp: 34, src: "data/monsters/mountain/slime.png", img: undefined },
+	{ name: "Water Slime", hp: 81, src: "data/monsters/water/slime.png", img: undefined }
 ];
 
 monsters.forEach( m => {
 	m.img = image_load( m.src );
 })
 
-let current_monster = roll(monsters.length - 1);
+let current_monster = 0;
 let monster_img = monsters[ current_monster ].img;
 let monster = sq_create( monster_img, 0, 0 );
 monster.name = "Desert Slime";
@@ -59,13 +61,13 @@ monster.handle_click = function() {
 	self.opa = 0.5; 
 	clicks++;
 	if( self.hp <= 0 ) {
-		gold += multiplier;
+		gold += (monsters[ current_monster ].hp * multiplier) / 5;
 
-		current_monster = roll( monsters.length - 1);
+		current_monster++;
 		if( current_monster > monsters.length - 1 ) { current_monster = 0; }
 		monster.name = monsters[ current_monster ].name; 
 		monster.img = monsters[ current_monster ].img; 
-		monster.hp = monsters[ current_monster ].hp * multiplier;
+		monster.hp = monsters[ current_monster ].hp * multiplier/5;
 	}
 }
 
@@ -108,7 +110,7 @@ let pause_button = Buttons.create( "menu", 10, canvas.height - 54, 150, 44, () =
 
 let multiplier_increase_button = Buttons.create( `Increase Multiplier - ${toInt(upgrade_multiplier_cost)} gold`, 170, canvas.height - 54, 500, 44, () => { 
 	if( gold >= upgrade_multiplier_cost ) {
-		multiplier += 0.1; gold -= upgrade_multiplier_cost
+		multiplier += multiplier_increase_rate; gold -= upgrade_multiplier_cost
 		upgrade_multiplier_cost += (multiplier * 10);
 		let label = `Increase Multiplier - ${toInt(upgrade_multiplier_cost)} gold`;
 		multiplier_increase_button.label = label;
@@ -117,13 +119,24 @@ let multiplier_increase_button = Buttons.create( `Increase Multiplier - ${toInt(
 });
 
 let label = `Auto Click - ${toInt(auto_click_cost)} gold`;
-let auto_click_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + 20, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
+let auto_click_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + 30, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
 	if( gold >= auto_click_cost ) {
 		auto_clicks += 1; gold -= auto_click_cost;
 		auto_click_cost += (multiplier * 30);
 		let label = `Auto Click - ${toInt(auto_click_cost)} gold`;
 		auto_click_button.label = label;
 		auto_click_button.w = label.length * auto_click_button.font.gw + 20;
+	}
+});
+
+label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
+let auto_click_rate_increase_cost_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + auto_click_button.w + 30, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
+	if( gold >= auto_click_rate_increase_cost ) {
+		auto_click_rate -= 10; gold -= auto_click_rate_increase_cost;
+		auto_click_rate_increase_cost += (multiplier * 40);
+		let label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
+		auto_click_rate_increase_cost_button.label = label;
+		auto_click_rate_increase_cost_button.w = label.length * auto_click_rate_increase_cost_button.font.gw + 20;
 	}
 });
 
@@ -200,6 +213,8 @@ function game_tick() {
 	multiplier_increase_button.y = canvas.height - 54;
 	auto_click_button.x = multiplier_increase_button.w + pause_button.w + 30
 	auto_click_button.y = canvas.height - 54;
+	auto_click_rate_increase_cost_button.x = multiplier_increase_button.w + pause_button.w + auto_click_button.w + 40;
+	auto_click_rate_increase_cost_button.y = canvas.height - 54;
 
 	if( T % auto_click_rate == 0 ) {
 		for( let i = 0; i < auto_clicks; i++) {
@@ -213,6 +228,7 @@ function game_draw() {
 	pause_button.draw();
 	multiplier_increase_button.draw();
 	auto_click_button.draw();
+	auto_click_rate_increase_cost_button.draw();
 	monster.draw();
 
 	let text = "Click to do damage";

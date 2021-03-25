@@ -20,7 +20,7 @@ var multiplier = 1;
 var multiplier_increase_rate = 0.5;
 var auto_clicks = 0;
 var auto_click_cost = 5;
-var auto_click_rate = 200; // ie 1 time per 100 ticks
+var auto_click_rate = 1000; // ie 1 time per 100 ticks
 var auto_click_rate_increase_cost = 100;
 
 display( canvas.width, canvas.height );
@@ -68,7 +68,7 @@ monster.handle_click = function() {
 		if( current_monster > monsters.length - 1 ) { current_monster = 0; }
 		monster.name = monsters[ current_monster ].name; 
 		monster.img = monsters[ current_monster ].img; 
-		monster.hp = monsters[ current_monster ].hp * multiplier;
+		monster.hp = monsters[ current_monster ].hp * (multiplier * auto_clicks);
 	}
 }
 
@@ -133,13 +133,14 @@ let auto_click_button = Buttons.create( label, multiplier_increase_button.w + pa
 label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
 let auto_click_rate_increase_cost_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + auto_click_button.w + 30, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
 	if( gold >= auto_click_rate_increase_cost ) {
-		if( auto_click_rate == 10 ) {
+		if( auto_click_rate == 1 ) {
 			auto_click_rate = 1; // max ms
 			auto_click_rate_increase_cost_button.alive = false;
 			auto_click_rate_increase_cost_button.visible = false;
 			return;
 		}
-		auto_click_rate -= 10; gold -= auto_click_rate_increase_cost;
+		auto_click_rate -= 1; 
+		gold -= auto_click_rate_increase_cost;
 		auto_click_rate_increase_cost += (multiplier * 40);
 		let label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
 		auto_click_rate_increase_cost_button.label = label;
@@ -208,7 +209,6 @@ function menu_tick() {
 	quit_button.y = (canvas.height * 0.5);
 }
 function menu_draw() {
-	dbg[1] = paused;
 	GFont.draw( bizcat_white, game_title, canvas.width * 0.5 - (game_title.length * bizcat_white.gw) / 2, canvas.height * 0.5 - 54 - 54);
 	play_button.draw();
 	quit_button.draw();
@@ -227,6 +227,9 @@ function game_tick() {
 		for( let i = 0; i < auto_clicks; i++) {
 			monster.handle_click();
 		}
+	}
+	if( mouse_down && monster.hover && T % 20 == 0) {
+		monster.handle_click();
 	}
 	monster.tick();
 }
@@ -247,9 +250,9 @@ function game_draw() {
 
 	dbg[1] = `Gold: ${toInt(gold)}`;
 	dbg[2] = `Clicks: ${clicks}`;
-	dbg[3] = `x${parseFloat(multiplier).toFixed(2)}`;
+	dbg[3] = `Multiplier: x${parseFloat(multiplier).toFixed(1)}`;
 	dbg[4] = `Auto Clicks ${auto_clicks}`;
-	dbg[5] = `Auto Click Rate ${200 - toInt(auto_click_rate)}`;
+	dbg[5] = `Auto Click Rate ${1000 - toInt(auto_click_rate)}`;
 	dbg_draw();
 }
 

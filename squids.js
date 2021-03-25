@@ -24,10 +24,7 @@ globalThis.deprecated_image_draw = function( img, x, y, sx, sy, rotation = 0, op
 	return image_draw_advanced( img, 0, 0, img.w, img.h, x, y, img.w * sx, img.h * sy, (img.w * sx)/2, (img.h * sy)/2, rotation, opacity);
 }
 
-globalThis.image_draw= function( img, x, y, scl, opa = 1, rot = 0 ) {
-	// center image on x,y given
-	x -= (img.w * scl) / 2;
-	y -= (img.h * scl) / 2;
+globalThis.image_draw = function( img, x, y, scl, opa = 1, rot = 0 ) {
 	Kraken.image_draw( img.id, x, y, img.w * scl, img.h * scl, opa, rot );
 }
 
@@ -47,7 +44,7 @@ globalThis.rect_stroke = function( color, x, y, w, h ) { return Kraken.rect_stro
 // The heart and soul of default squid
 globalThis.sq_create = function(img = {w:0, h:0}, x = 0, y = 0) {
 	let o = {
-		id: `sq_${seq}`,
+		id: `sq_${seq()}`,
 		img: img,
 		x: x, y: y,
 		sx: 1, sy: 1,
@@ -64,6 +61,9 @@ globalThis.sq_create = function(img = {w:0, h:0}, x = 0, y = 0) {
 			if( ! self.alive ) return;
 			if( ! self.img.id ) return;
 			image_draw(self.img, self.x, self.y, self.sx, self.opa, self.rot);
+		},
+		log(text) {
+			log(`${this.id}: ${text}`);
 		}
 	}
 	return o;

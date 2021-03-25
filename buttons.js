@@ -1,15 +1,15 @@
 import { hit_xy, log } from "./squids.js";
 import { GFont } from "./gfont.js";
 
-let hover_events = [];
-let mouse_down_events = [];
-let mouse_up_events = [];
+globalThis.hover_events = [];
+globalThis.mouse_down_events = [];
+globalThis.mouse_up_events = [];
 
 // general function that loops through each element in the corresponding arrays
 // and sets their event state when conditions are met for that event
 let process_events = function() {
     mouse_up_events.forEach(element => {
-        if( ! element.visible ) return;
+        if( ! element.alive ) return;
         if( ! element.mouse_down ) element.click = false;
         let pos = { x: mx, y: my };
         let rect = { x: element.x, y: element.y, w: element.w, h: element.h };
@@ -21,7 +21,7 @@ let process_events = function() {
     })
 
     hover_events.forEach(element => {
-        if( ! element.visible ) return;
+        if( ! element.alive ) return;
         if( mouse_down || element.mouse_down ) return;
         let pos = { x: mx, y: my };
         let rect = { x: element.x, y: element.y, w: element.w, h: element.h };
@@ -33,7 +33,7 @@ let process_events = function() {
     })
 
     mouse_down_events.forEach(element => {
-        if( ! element.visible ) return;
+        if( ! element.alive ) return;
         if(element.mouse_down && element.mouse_up) {
             element.click = true; //click
         }
@@ -66,7 +66,7 @@ let create = function(label="", x = 0, y = 0, w = 0, h = 0, handle_click = funct
         x: x, y: y, w: w, h: h,
         hover: false, mouse_down: false, mouse_up: false,
         click: false,
-        visible: true,
+        alive: true,
         font: font,
         activeFont: activeFont,
         handle_click: handle_click,
@@ -79,15 +79,15 @@ let create = function(label="", x = 0, y = 0, w = 0, h = 0, handle_click = funct
             }
             if(self.hover) {
                 if(self.mouse_down) {
-                    rect_fill(xpBlue, self.x, self.y, self.w, self.h);
+                    rect_fill(self.active_color || xpBlue, self.x, self.y, self.w, self.h);
                     self.old_font = self.font;
                     self.font = self.activeFont;
                 } else {
-                    rect_fill(white, self.x, self.y, self.w, self.h);
-                    rect_stroke(xpBlue, self.x, self.y, self.w, self.h);
+                    rect_fill(self.fill_color || white, self.x, self.y, self.w, self.h);
+                    rect_stroke(self.active_color || xpBlue, self.x, self.y, self.w, self.h);
                 }
             } else {
-                rect_fill(white, self.x, self.y, self.w, self.h);
+                rect_fill(self.fill_color || white, self.x, self.y, self.w, self.h);
             }
 
             GFont.draw(self.font, self.label, 

@@ -1,4 +1,4 @@
-import { display, sleep, log, coin_flip, toInt, event_next } from "squids.js";
+import { display, sleep, log, coin_flip, toInt, event_next, hit_xy, roll } from "squids.js";
 import { GFont } from "gfont.js";
 import { Buttons } from "buttons.js";
 
@@ -13,6 +13,8 @@ let tick, draw;
 
 var dbg = [];
 
+var gold = 0;
+
 display( canvas.width, canvas.height );
 
 let img_squid = image_load( "data/purple_squid.png" );
@@ -24,7 +26,77 @@ let bizcat_grey = GFont.load(  "data/bizcat_grey.png", 16, 16 );
 Buttons.set_default_font( bizcat );
 Buttons.set_active_font( bizcat_grey );
 
-let play_button = Buttons.create( "New Game", 10, canvas.height - 54 - 54, 250, 44, () => { paused = false; });
+let monsters = [
+	{ name: "Desert Slime", hp: 14, src: "data/monsters/desert/slime.png", img: undefined },
+	{ name: "Desert Slug", hp: 25, src: "data/monsters/desert/slug.png", img: undefined },
+	{ name: "Forest Slime", hp: 14, src: "data/monsters/forest/slime.png", img: undefined },
+	{ name: "Forest Slug", hp: 25, src: "data/monsters/forest/slug.png", img: undefined },
+	{ name: "Mountain Slime", hp: 14, src: "data/monsters/mountain/slime.png", img: undefined },
+	{ name: "Water Slime", hp: 14, src: "data/monsters/water/slime.png", img: undefined }
+];
+
+monsters.forEach( m => {
+	m.img = image_load( m.src );
+})
+
+let current_monster = roll(monsters.length - 1);
+let monster_img = monsters[ current_monster ].img;
+let monster = sq_create( monster_img, 0, 0 );
+monster.name = "Desert Slime";
+monster.hp = monsters[ current_monster ].hp;
+monster.w = monster_img.w * monster.sx;
+monster.h = monster_img.h * monster.sy;
+
+monster.handle_click = function() {
+	let self = this;
+	self.hp--;
+	self.opa = 0.5; 
+	if( self.hp <= 0 ) {
+		gold++;
+
+		current_monster = roll( monsters.length - 1);
+		if( current_monster > monsters.length - 1 ) { current_monster = 0; }
+		monster.name = monsters[ current_monster ].name; 
+		monster.img = monsters[ current_monster ].img; 
+		monster.hp = monsters[ current_monster ].hp;
+	}
+}
+
+hover_events.push(monster);
+mouse_down_events.push(monster);
+mouse_up_events.push(monster);
+
+monster.tick = function() { 
+	let self = this;
+	if( ! self.alive ) { return; }
+
+	self.x = canvas.width / 2 - (self.img.w * self.sx) / 2;
+	self.y = canvas.height / 2 - (self.img.h * self.sy) / 2;
+	self.w = self.img.w * self.sx;
+	self.h = self.img.h * self.sy;
+
+	if(self.click) {
+		self.handle_click();
+	}
+
+	if( self.opa < 1 && T % 5 == 0) {
+		self.opa += 0.1;
+	}
+
+	self.sy = self.sx;
+
+}
+
+monster.draw = function() {
+	let self = this;
+	if( ! self.alive ) { return; }
+	image_draw( self.img, self.x, self.y, self.sx, self.opa, self.rot );
+	//rect_stroke( 0xFF3333FF, self.x, self.y, self.img.w * self.sx, self.img.h * self.sy );
+	let label = `${self.name} - HP: ${self.hp}`;
+	GFont.draw( bizcat_white, label, self.x + (self.img.w*self.sx/2) - (label.length * bizcat_white.gw) / 2, self.y - 16 );
+}
+
+let play_button = Buttons.create( "New Game", 10, canvas.height - 54 - 54, 250, 44, () => { paused = false; tick = game_tick; draw = game_draw; });
 let quit_button = Buttons.create( "Quit", 10, canvas.height - 54, 250, 44, () => { quit = true; });
 
 function tick_splash() { }
@@ -95,6 +167,15 @@ function menu_draw() {
 	dbg_draw();
 }
 
+function game_tick() {
+	monster.tick();
+}
+function game_draw() {
+	dbg[1] = `Gold: ${gold}`;
+	monster.draw();
+	dbg_draw();
+}
+
 function dbg_draw() {
 	dbg[0] = T;
 	let dy = 10;
@@ -114,7 +195,7 @@ function loop() {
 
 let skip_splash = true;
 function FPS_LOCK() {
-    Kraken.full_screen( 0 );
+    Kraken.full_screen( 1 );
 	while( true ) {
 		if( quit ) break;
 		while(true) {
@@ -155,6 +236,7 @@ function FPS_LOCK() {
 
 tick = skip_splash ? menu_tick : tick_splash;
 draw = skip_splash ? menu_draw : draw_splash;
+
 FPS_LOCK();
 log( "I welcome thee, oh merciful oblivion." )
 

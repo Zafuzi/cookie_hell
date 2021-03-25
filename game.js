@@ -31,6 +31,11 @@ let bubbles = image_load( "data/bubbles.png" );
 let bizcat = GFont.load(  "data/bizcat.png", 16, 16 );
 let bizcat_white = GFont.load(  "data/bizcat_white.png", 16, 16 );
 let bizcat_grey = GFont.load(  "data/bizcat_grey.png", 16, 16 );
+
+let coin = sound_load("data/coin.wav");
+let kill = sound_load("data/killed_zombie.wav");
+let music = music_load("data/music.mp3");
+
 Buttons.set_default_font( bizcat );
 Buttons.set_active_font( bizcat_grey );
 
@@ -69,6 +74,7 @@ monster.handle_click = function() {
 		monster.name = monsters[ current_monster ].name; 
 		monster.img = monsters[ current_monster ].img; 
 		monster.hp = monsters[ current_monster ].hp * (multiplier * auto_clicks);
+		sound_play(kill, 0.5);
 	}
 }
 
@@ -179,8 +185,8 @@ function draw_splash() {
 	let scl = 0.4;
 	let dw = img_squid.w * scl;
 	let dh = img_squid.h * scl;
-	let dx = ( canvas.width * 0.5 );
-	let dy = ( canvas.height * 0.3 );
+	let dx = ( canvas.width * 0.5 ) - dw / 2;
+	let dy = ( canvas.height * 0.3 ) - dh / 2;
 	dy += ( acc_y * 0.010 );
 	acc_y += vel_y;
 	vel_y += grvty
@@ -194,12 +200,12 @@ function draw_splash() {
 	image_draw( bubbles, dx, dy + y, 1, o, 0);
 
 	// draw title text
-	dx = ( canvas.width * 0.5 );
-	dy = canvas.height * 0.6;
+	dx = canvas.width / 2 - img_title.w/2;
+	dy = canvas.height * 0.6 - img_title.h/2;
 
 	image_draw( img_title, dx, dy, 1, o, 0 );
 
-	dbg_draw();
+	//dbg_draw();
 }
 
 function menu_tick() {
@@ -212,7 +218,7 @@ function menu_draw() {
 	GFont.draw( bizcat_white, game_title, canvas.width * 0.5 - (game_title.length * bizcat_white.gw) / 2, canvas.height * 0.5 - 54 - 54);
 	play_button.draw();
 	quit_button.draw();
-	dbg_draw();
+	//dbg_draw();
 }
 
 function game_tick() {
@@ -228,8 +234,10 @@ function game_tick() {
 			monster.handle_click();
 		}
 	}
-	if( mouse_down && monster.hover && T % 20 == 0) {
-		monster.handle_click();
+	if( mouse_down && monster.hover ) {
+		if( T % 20 == 0 ) {
+			monster.handle_click();
+		}
 	}
 	monster.tick();
 }
@@ -273,7 +281,7 @@ function loop() {
 	draw_end();
 }
 
-let skip_splash = true;
+let skip_splash = false;
 function FPS_LOCK() {
     Kraken.full_screen( 0 );
 	while( true ) {
@@ -317,6 +325,7 @@ function FPS_LOCK() {
 tick = skip_splash ? menu_tick : tick_splash;
 draw = skip_splash ? menu_draw : draw_splash;
 
+//music_play(music, 0.01);
 FPS_LOCK();
 log( "I welcome thee, oh merciful oblivion." )
 

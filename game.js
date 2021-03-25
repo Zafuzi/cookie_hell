@@ -17,6 +17,9 @@ var gold = 0;
 var clicks = 0;
 var upgrade_multiplier_cost = 10;
 var multiplier = 1;
+var auto_clicks = 0;
+var auto_click_cost = 5;
+var auto_click_rate = 100; // ie 1 time per 100 ticks
 
 display( canvas.width, canvas.height );
 
@@ -113,6 +116,17 @@ let multiplier_increase_button = Buttons.create( `Increase Multiplier - ${toInt(
 	}
 });
 
+let label = `Auto Click - ${toInt(auto_click_cost)} gold`;
+let auto_click_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + 20, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
+	if( gold >= auto_click_cost ) {
+		auto_clicks += 1; gold -= auto_click_cost;
+		auto_click_cost += (multiplier * 30);
+		let label = `Auto Click - ${toInt(auto_click_cost)} gold`;
+		auto_click_button.label = label;
+		auto_click_button.w = label.length * auto_click_button.font.gw + 20;
+	}
+});
+
 function tick_splash() { }
 
 let o = 0;
@@ -184,13 +198,21 @@ function menu_draw() {
 function game_tick() {
 	pause_button.y = canvas.height - 54;
 	multiplier_increase_button.y = canvas.height - 54;
-	monster.handle_click();
+	auto_click_button.x = multiplier_increase_button.w + pause_button.w + 30
+	auto_click_button.y = canvas.height - 54;
+
+	if( T % auto_click_rate == 0 ) {
+		for( let i = 0; i < auto_clicks; i++) {
+			monster.handle_click();
+		}
+	}
 	monster.tick();
 }
 function game_draw() {
 
 	pause_button.draw();
 	multiplier_increase_button.draw();
+	auto_click_button.draw();
 	monster.draw();
 
 	let text = "Click to do damage";
@@ -201,6 +223,8 @@ function game_draw() {
 	dbg[1] = `Gold: ${toInt(gold)}`;
 	dbg[2] = `Clicks: ${clicks}`;
 	dbg[3] = `x${parseFloat(multiplier).toFixed(2)}`;
+	dbg[4] = `Auto Clicks ${auto_clicks}`;
+	dbg[5] = `Auto Click Rate ${toInt(auto_click_rate)}`;
 	dbg_draw();
 }
 

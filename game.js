@@ -20,7 +20,7 @@ var multiplier = 1;
 var multiplier_increase_rate = 0.5;
 var auto_clicks = 0;
 var auto_click_cost = 5;
-var auto_click_rate = 100; // ie 1 time per 100 ticks
+var auto_click_rate = 200; // ie 1 time per 100 ticks
 var auto_click_rate_increase_cost = 100;
 
 display( canvas.width, canvas.height );
@@ -35,12 +35,12 @@ Buttons.set_default_font( bizcat );
 Buttons.set_active_font( bizcat_grey );
 
 let monsters = [
-	{ name: "Desert Slime", hp: 4, src: "data/monsters/desert/slime.png", img: undefined },
-	{ name: "Desert Slug", hp: 8, src: "data/monsters/desert/slug.png", img: undefined },
-	{ name: "Forest Slime", hp: 14, src: "data/monsters/forest/slime.png", img: undefined },
-	{ name: "Forest Slug", hp: 25, src: "data/monsters/forest/slug.png", img: undefined },
-	{ name: "Mountain Slime", hp: 34, src: "data/monsters/mountain/slime.png", img: undefined },
-	{ name: "Water Slime", hp: 81, src: "data/monsters/water/slime.png", img: undefined }
+	{ name: "Desert Slime", hp: 600, src: "data/monsters/desert/slime.png", img: undefined },
+	{ name: "Desert Slug", hp: 1800, src: "data/monsters/desert/slug.png", img: undefined },
+	{ name: "Forest Slime", hp: 800, src: "data/monsters/forest/slime.png", img: undefined },
+	{ name: "Forest Slug", hp: 2000, src: "data/monsters/forest/slug.png", img: undefined },
+	{ name: "Mountain Slime", hp: 1000, src: "data/monsters/mountain/slime.png", img: undefined },
+	{ name: "Water Slime", hp: 3200, src: "data/monsters/water/slime.png", img: undefined }
 ];
 
 monsters.forEach( m => {
@@ -60,14 +60,15 @@ monster.handle_click = function() {
 	self.hp--;
 	self.opa = 0.5; 
 	clicks++;
+	gold += multiplier;
 	if( self.hp <= 0 ) {
+		// bonus for killing the monster
 		gold += (monsters[ current_monster ].hp * multiplier) / 5;
-
 		current_monster++;
 		if( current_monster > monsters.length - 1 ) { current_monster = 0; }
 		monster.name = monsters[ current_monster ].name; 
 		monster.img = monsters[ current_monster ].img; 
-		monster.hp = monsters[ current_monster ].hp * multiplier/5;
+		monster.hp = monsters[ current_monster ].hp * multiplier;
 	}
 }
 
@@ -132,6 +133,12 @@ let auto_click_button = Buttons.create( label, multiplier_increase_button.w + pa
 label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
 let auto_click_rate_increase_cost_button = Buttons.create( label, multiplier_increase_button.w + pause_button.w + auto_click_button.w + 30, canvas.height - 54, label.length * bizcat.gw + 20, 44, () => { 
 	if( gold >= auto_click_rate_increase_cost ) {
+		if( auto_click_rate == 10 ) {
+			auto_click_rate = 1; // max ms
+			auto_click_rate_increase_cost_button.alive = false;
+			auto_click_rate_increase_cost_button.visible = false;
+			return;
+		}
 		auto_click_rate -= 10; gold -= auto_click_rate_increase_cost;
 		auto_click_rate_increase_cost += (multiplier * 40);
 		let label = `Auto Click Rate - ${toInt(auto_click_rate_increase_cost)} gold`;
@@ -228,7 +235,9 @@ function game_draw() {
 	pause_button.draw();
 	multiplier_increase_button.draw();
 	auto_click_button.draw();
-	auto_click_rate_increase_cost_button.draw();
+	if( auto_click_rate_increase_cost_button.alive ) {
+		auto_click_rate_increase_cost_button.draw();
+	}
 	monster.draw();
 
 	let text = "Click to do damage";
@@ -240,7 +249,7 @@ function game_draw() {
 	dbg[2] = `Clicks: ${clicks}`;
 	dbg[3] = `x${parseFloat(multiplier).toFixed(2)}`;
 	dbg[4] = `Auto Clicks ${auto_clicks}`;
-	dbg[5] = `Auto Click Rate ${toInt(auto_click_rate)}`;
+	dbg[5] = `Auto Click Rate ${200 - toInt(auto_click_rate)}`;
 	dbg_draw();
 }
 

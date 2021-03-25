@@ -3,7 +3,7 @@ import { GFont } from "gfont.js";
 import { Buttons } from "buttons.js";
 
 let T = 0;
-let game_title = "Cookie Hell";
+let game_title = "Idle RPG";
 
 const FPS = 120; 
 var fps = FPS;
@@ -14,6 +14,9 @@ let tick, draw;
 var dbg = [];
 
 var gold = 0;
+var clicks = 0;
+var upgrade_multiplier_cost = 10;
+var multiplier = 1;
 
 display( canvas.width, canvas.height );
 
@@ -27,12 +30,12 @@ Buttons.set_default_font( bizcat );
 Buttons.set_active_font( bizcat_grey );
 
 let monsters = [
-	{ name: "Desert Slime", hp: 14, src: "data/monsters/desert/slime.png", img: undefined },
-	{ name: "Desert Slug", hp: 25, src: "data/monsters/desert/slug.png", img: undefined },
-	{ name: "Forest Slime", hp: 14, src: "data/monsters/forest/slime.png", img: undefined },
-	{ name: "Forest Slug", hp: 25, src: "data/monsters/forest/slug.png", img: undefined },
-	{ name: "Mountain Slime", hp: 14, src: "data/monsters/mountain/slime.png", img: undefined },
-	{ name: "Water Slime", hp: 14, src: "data/monsters/water/slime.png", img: undefined }
+	{ name: "Desert Slime", hp: 4, src: "data/monsters/desert/slime.png", img: undefined },
+	{ name: "Desert Slug", hp: 5, src: "data/monsters/desert/slug.png", img: undefined },
+	{ name: "Forest Slime", hp: 4, src: "data/monsters/forest/slime.png", img: undefined },
+	{ name: "Forest Slug", hp: 5, src: "data/monsters/forest/slug.png", img: undefined },
+	{ name: "Mountain Slime", hp: 4, src: "data/monsters/mountain/slime.png", img: undefined },
+	{ name: "Water Slime", hp: 4, src: "data/monsters/water/slime.png", img: undefined }
 ];
 
 monsters.forEach( m => {
@@ -51,14 +54,15 @@ monster.handle_click = function() {
 	let self = this;
 	self.hp--;
 	self.opa = 0.5; 
+	clicks++;
 	if( self.hp <= 0 ) {
-		gold++;
+		gold += multiplier;
 
 		current_monster = roll( monsters.length - 1);
 		if( current_monster > monsters.length - 1 ) { current_monster = 0; }
 		monster.name = monsters[ current_monster ].name; 
 		monster.img = monsters[ current_monster ].img; 
-		monster.hp = monsters[ current_monster ].hp;
+		monster.hp = monsters[ current_monster ].hp * multiplier;
 	}
 }
 
@@ -84,7 +88,6 @@ monster.tick = function() {
 	}
 
 	self.sy = self.sx;
-
 }
 
 monster.draw = function() {
@@ -92,12 +95,23 @@ monster.draw = function() {
 	if( ! self.alive ) { return; }
 	image_draw( self.img, self.x, self.y, self.sx, self.opa, self.rot );
 	//rect_stroke( 0xFF3333FF, self.x, self.y, self.img.w * self.sx, self.img.h * self.sy );
-	let label = `${self.name} - HP: ${self.hp}`;
-	GFont.draw( bizcat_white, label, self.x + (self.img.w*self.sx/2) - (label.length * bizcat_white.gw) / 2, self.y - 16 );
+	let label = `${self.name} - HP: ${parseFloat(self.hp).toFixed(2)}`;
+	GFont.draw( bizcat_white, label, self.x + (self.img.w*self.sx/2) - (label.length * bizcat_white.gw) / 2, self.y + self.img.h*self.sy );
 }
 
-let play_button = Buttons.create( "New Game", 10, canvas.height - 54 - 54, 250, 44, () => { paused = false; tick = game_tick; draw = game_draw; });
-let quit_button = Buttons.create( "Quit", 10, canvas.height - 54, 250, 44, () => { quit = true; });
+let play_button = Buttons.create( "play", 10, canvas.height - 54 - 54, 250, 44, () => { paused = false; tick = game_tick; draw = game_draw; });
+let quit_button = Buttons.create( "quit", 10, canvas.height - 54, 250, 44, () => { quit = true; });
+let pause_button = Buttons.create( "menu", 10, canvas.height - 54, 150, 44, () => { paused = true; tick = menu_tick; draw = menu_draw; });
+
+let multiplier_increase_button = Buttons.create( `Increase Multiplier - ${toInt(upgrade_multiplier_cost)} gold`, 170, canvas.height - 54, 500, 44, () => { 
+	if( gold >= upgrade_multiplier_cost ) {
+		multiplier += 0.1; gold -= upgrade_multiplier_cost
+		upgrade_multiplier_cost += (multiplier * 10);
+		let label = `Increase Multiplier - ${toInt(upgrade_multiplier_cost)} gold`;
+		multiplier_increase_button.label = label;
+		multiplier_increase_button.w = label.length * multiplier_increase_button.font.gw + 20;
+	}
+});
 
 function tick_splash() { }
 
@@ -168,16 +182,29 @@ function menu_draw() {
 }
 
 function game_tick() {
+	pause_button.y = canvas.height - 54;
+	multiplier_increase_button.y = canvas.height - 54;
+	monster.handle_click();
 	monster.tick();
 }
 function game_draw() {
-	dbg[1] = `Gold: ${gold}`;
+
+	pause_button.draw();
+	multiplier_increase_button.draw();
 	monster.draw();
+
+	let text = "Click to do damage";
+	if( clicks < 25 ) {
+		GFont.draw( bizcat_white, text, canvas.width / 2 - (text.length * bizcat_white.gw) / 2, canvas.height/2 + 200 );
+	}
+
+	dbg[1] = `Gold: ${toInt(gold)}`;
+	dbg[2] = `Clicks: ${clicks}`;
+	dbg[3] = `x${parseFloat(multiplier).toFixed(2)}`;
 	dbg_draw();
 }
 
 function dbg_draw() {
-	dbg[0] = T;
 	let dy = 10;
 	dbg.forEach(m => {
 		GFont.draw( bizcat_white, (""+m), 10, dy, 1);
@@ -187,6 +214,7 @@ function dbg_draw() {
 
 function loop() {
 	T++;
+	//dbg[0] = T;
 	tick();
 	draw_start(0x122435FF);
 	draw();
@@ -195,7 +223,7 @@ function loop() {
 
 let skip_splash = true;
 function FPS_LOCK() {
-    Kraken.full_screen( 1 );
+    Kraken.full_screen( 0 );
 	while( true ) {
 		if( quit ) break;
 		while(true) {
